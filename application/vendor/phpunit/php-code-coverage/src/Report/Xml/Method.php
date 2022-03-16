@@ -1,39 +1,40 @@
-<?php declare(strict_types=1);
+<?php
 /*
- * This file is part of phpunit/php-code-coverage.
+ * This file is part of the php-code-coverage package.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace SebastianBergmann\CodeCoverage\Report\Xml;
 
-use DOMElement;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Method
+class Method
 {
     /**
-     * @var DOMElement
+     * @var \DOMElement
      */
     private $contextNode;
 
-    public function __construct(DOMElement $context, string $name)
+    public function __construct(\DOMElement $context, $name)
     {
         $this->contextNode = $context;
 
         $this->setName($name);
     }
 
-    public function setSignature(string $signature): void
+    private function setName($name)
+    {
+        $this->contextNode->setAttribute('name', $name);
+    }
+
+    public function setSignature($signature)
     {
         $this->contextNode->setAttribute('signature', $signature);
     }
 
-    public function setLines(string $start, ?string $end = null): void
+    public function setLines($start, $end = null)
     {
         $this->contextNode->setAttribute('start', $start);
 
@@ -42,20 +43,15 @@ final class Method
         }
     }
 
-    public function setTotals(string $executable, string $executed, string $coverage): void
+    public function setTotals($executable, $executed, $coverage)
     {
         $this->contextNode->setAttribute('executable', $executable);
         $this->contextNode->setAttribute('executed', $executed);
         $this->contextNode->setAttribute('coverage', $coverage);
     }
 
-    public function setCrap(string $crap): void
+    public function setCrap($crap)
     {
         $this->contextNode->setAttribute('crap', $crap);
-    }
-
-    private function setName(string $name): void
-    {
-        $this->contextNode->setAttribute('name', $name);
     }
 }

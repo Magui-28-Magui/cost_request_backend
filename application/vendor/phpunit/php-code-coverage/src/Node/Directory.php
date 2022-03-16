@@ -1,23 +1,21 @@
-<?php declare(strict_types=1);
+<?php
 /*
- * This file is part of phpunit/php-code-coverage.
+ * This file is part of the php-code-coverage package.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace SebastianBergmann\CodeCoverage\Node;
 
-use function array_merge;
-use function count;
-use IteratorAggregate;
-use RecursiveIteratorIterator;
+use SebastianBergmann\CodeCoverage\InvalidArgumentException;
 
 /**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
+ * Represents a directory in the code coverage information tree.
  */
-final class Directory extends AbstractNode implements IteratorAggregate
+class Directory extends AbstractNode implements \IteratorAggregate
 {
     /**
      * @var AbstractNode[]
@@ -50,9 +48,9 @@ final class Directory extends AbstractNode implements IteratorAggregate
     private $functions;
 
     /**
-     * @psalm-var null|array{linesOfCode: int, commentLinesOfCode: int, nonCommentLinesOfCode: int}
+     * @var array
      */
-    private $linesOfCode;
+    private $linesOfCode = null;
 
     /**
      * @var int
@@ -68,26 +66,6 @@ final class Directory extends AbstractNode implements IteratorAggregate
      * @var int
      */
     private $numExecutedLines = -1;
-
-    /**
-     * @var int
-     */
-    private $numExecutableBranches = -1;
-
-    /**
-     * @var int
-     */
-    private $numExecutedBranches = -1;
-
-    /**
-     * @var int
-     */
-    private $numExecutablePaths = -1;
-
-    /**
-     * @var int
-     */
-    private $numExecutedPaths = -1;
 
     /**
      * @var int
@@ -129,9 +107,14 @@ final class Directory extends AbstractNode implements IteratorAggregate
      */
     private $numTestedFunctions = -1;
 
-    public function count(): int
+    /**
+     * Returns the number of files in/under this node.
+     *
+     * @return int
+     */
+    public function count()
     {
-        if ($this->numFiles === -1) {
+        if ($this->numFiles == -1) {
             $this->numFiles = 0;
 
             foreach ($this->children as $child) {
@@ -142,15 +125,27 @@ final class Directory extends AbstractNode implements IteratorAggregate
         return $this->numFiles;
     }
 
-    public function getIterator(): RecursiveIteratorIterator
+    /**
+     * Returns an iterator for this node.
+     *
+     * @return \RecursiveIteratorIterator
+     */
+    public function getIterator()
     {
-        return new RecursiveIteratorIterator(
+        return new \RecursiveIteratorIterator(
             new Iterator($this),
-            RecursiveIteratorIterator::SELF_FIRST
+            \RecursiveIteratorIterator::SELF_FIRST
         );
     }
 
-    public function addDirectory(string $name): self
+    /**
+     * Adds a new directory.
+     *
+     * @param string $name
+     *
+     * @return Directory
+     */
+    public function addDirectory($name)
     {
         $directory = new self($name, $this);
 
@@ -160,31 +155,73 @@ final class Directory extends AbstractNode implements IteratorAggregate
         return $directory;
     }
 
-    public function addFile(File $file): void
+    /**
+     * Adds a new file.
+     *
+     * @param string $name
+     * @param array  $coverageData
+     * @param array  $testData
+     * @param bool   $cacheTokens
+     *
+     * @return File
+     *
+     * @throws InvalidArgumentException
+     */
+    public function addFile($name, array $coverageData, array $testData, $cacheTokens)
     {
+        $file = new File(
+            $name,
+            $this,
+            $coverageData,
+            $testData,
+            $cacheTokens
+        );
+
         $this->children[] = $file;
         $this->files[]    = &$this->children[count($this->children) - 1];
 
         $this->numExecutableLines = -1;
         $this->numExecutedLines   = -1;
+
+        return $file;
     }
 
-    public function directories(): array
+    /**
+     * Returns the directories in this directory.
+     *
+     * @return array
+     */
+    public function getDirectories()
     {
         return $this->directories;
     }
 
-    public function files(): array
+    /**
+     * Returns the files in this directory.
+     *
+     * @return array
+     */
+    public function getFiles()
     {
         return $this->files;
     }
 
-    public function children(): array
+    /**
+     * Returns the child nodes of this node.
+     *
+     * @return array
+     */
+    public function getChildNodes()
     {
         return $this->children;
     }
 
-    public function classes(): array
+    /**
+     * Returns the classes of this node.
+     *
+     * @return array
+     */
+    public function getClasses()
     {
         if ($this->classes === null) {
             $this->classes = [];
@@ -192,7 +229,7 @@ final class Directory extends AbstractNode implements IteratorAggregate
             foreach ($this->children as $child) {
                 $this->classes = array_merge(
                     $this->classes,
-                    $child->classes()
+                    $child->getClasses()
                 );
             }
         }
@@ -200,7 +237,12 @@ final class Directory extends AbstractNode implements IteratorAggregate
         return $this->classes;
     }
 
-    public function traits(): array
+    /**
+     * Returns the traits of this node.
+     *
+     * @return array
+     */
+    public function getTraits()
     {
         if ($this->traits === null) {
             $this->traits = [];
@@ -208,7 +250,7 @@ final class Directory extends AbstractNode implements IteratorAggregate
             foreach ($this->children as $child) {
                 $this->traits = array_merge(
                     $this->traits,
-                    $child->traits()
+                    $child->getTraits()
                 );
             }
         }
@@ -216,7 +258,12 @@ final class Directory extends AbstractNode implements IteratorAggregate
         return $this->traits;
     }
 
-    public function functions(): array
+    /**
+     * Returns the functions of this node.
+     *
+     * @return array
+     */
+    public function getFunctions()
     {
         if ($this->functions === null) {
             $this->functions = [];
@@ -224,7 +271,7 @@ final class Directory extends AbstractNode implements IteratorAggregate
             foreach ($this->children as $child) {
                 $this->functions = array_merge(
                     $this->functions,
-                    $child->functions()
+                    $child->getFunctions()
                 );
             }
         }
@@ -233,205 +280,201 @@ final class Directory extends AbstractNode implements IteratorAggregate
     }
 
     /**
-     * @psalm-return array{linesOfCode: int, commentLinesOfCode: int, nonCommentLinesOfCode: int}
+     * Returns the LOC/CLOC/NCLOC of this node.
+     *
+     * @return array
      */
-    public function linesOfCode(): array
+    public function getLinesOfCode()
     {
         if ($this->linesOfCode === null) {
-            $this->linesOfCode = [
-                'linesOfCode'           => 0,
-                'commentLinesOfCode'    => 0,
-                'nonCommentLinesOfCode' => 0,
-            ];
+            $this->linesOfCode = ['loc' => 0, 'cloc' => 0, 'ncloc' => 0];
 
             foreach ($this->children as $child) {
-                $childLinesOfCode = $child->linesOfCode();
+                $linesOfCode = $child->getLinesOfCode();
 
-                $this->linesOfCode['linesOfCode'] += $childLinesOfCode['linesOfCode'];
-                $this->linesOfCode['commentLinesOfCode'] += $childLinesOfCode['commentLinesOfCode'];
-                $this->linesOfCode['nonCommentLinesOfCode'] += $childLinesOfCode['nonCommentLinesOfCode'];
+                $this->linesOfCode['loc']   += $linesOfCode['loc'];
+                $this->linesOfCode['cloc']  += $linesOfCode['cloc'];
+                $this->linesOfCode['ncloc'] += $linesOfCode['ncloc'];
             }
         }
 
         return $this->linesOfCode;
     }
 
-    public function numberOfExecutableLines(): int
+    /**
+     * Returns the number of executable lines.
+     *
+     * @return int
+     */
+    public function getNumExecutableLines()
     {
-        if ($this->numExecutableLines === -1) {
+        if ($this->numExecutableLines == -1) {
             $this->numExecutableLines = 0;
 
             foreach ($this->children as $child) {
-                $this->numExecutableLines += $child->numberOfExecutableLines();
+                $this->numExecutableLines += $child->getNumExecutableLines();
             }
         }
 
         return $this->numExecutableLines;
     }
 
-    public function numberOfExecutedLines(): int
+    /**
+     * Returns the number of executed lines.
+     *
+     * @return int
+     */
+    public function getNumExecutedLines()
     {
-        if ($this->numExecutedLines === -1) {
+        if ($this->numExecutedLines == -1) {
             $this->numExecutedLines = 0;
 
             foreach ($this->children as $child) {
-                $this->numExecutedLines += $child->numberOfExecutedLines();
+                $this->numExecutedLines += $child->getNumExecutedLines();
             }
         }
 
         return $this->numExecutedLines;
     }
 
-    public function numberOfExecutableBranches(): int
+    /**
+     * Returns the number of classes.
+     *
+     * @return int
+     */
+    public function getNumClasses()
     {
-        if ($this->numExecutableBranches === -1) {
-            $this->numExecutableBranches = 0;
-
-            foreach ($this->children as $child) {
-                $this->numExecutableBranches += $child->numberOfExecutableBranches();
-            }
-        }
-
-        return $this->numExecutableBranches;
-    }
-
-    public function numberOfExecutedBranches(): int
-    {
-        if ($this->numExecutedBranches === -1) {
-            $this->numExecutedBranches = 0;
-
-            foreach ($this->children as $child) {
-                $this->numExecutedBranches += $child->numberOfExecutedBranches();
-            }
-        }
-
-        return $this->numExecutedBranches;
-    }
-
-    public function numberOfExecutablePaths(): int
-    {
-        if ($this->numExecutablePaths === -1) {
-            $this->numExecutablePaths = 0;
-
-            foreach ($this->children as $child) {
-                $this->numExecutablePaths += $child->numberOfExecutablePaths();
-            }
-        }
-
-        return $this->numExecutablePaths;
-    }
-
-    public function numberOfExecutedPaths(): int
-    {
-        if ($this->numExecutedPaths === -1) {
-            $this->numExecutedPaths = 0;
-
-            foreach ($this->children as $child) {
-                $this->numExecutedPaths += $child->numberOfExecutedPaths();
-            }
-        }
-
-        return $this->numExecutedPaths;
-    }
-
-    public function numberOfClasses(): int
-    {
-        if ($this->numClasses === -1) {
+        if ($this->numClasses == -1) {
             $this->numClasses = 0;
 
             foreach ($this->children as $child) {
-                $this->numClasses += $child->numberOfClasses();
+                $this->numClasses += $child->getNumClasses();
             }
         }
 
         return $this->numClasses;
     }
 
-    public function numberOfTestedClasses(): int
+    /**
+     * Returns the number of tested classes.
+     *
+     * @return int
+     */
+    public function getNumTestedClasses()
     {
-        if ($this->numTestedClasses === -1) {
+        if ($this->numTestedClasses == -1) {
             $this->numTestedClasses = 0;
 
             foreach ($this->children as $child) {
-                $this->numTestedClasses += $child->numberOfTestedClasses();
+                $this->numTestedClasses += $child->getNumTestedClasses();
             }
         }
 
         return $this->numTestedClasses;
     }
 
-    public function numberOfTraits(): int
+    /**
+     * Returns the number of traits.
+     *
+     * @return int
+     */
+    public function getNumTraits()
     {
-        if ($this->numTraits === -1) {
+        if ($this->numTraits == -1) {
             $this->numTraits = 0;
 
             foreach ($this->children as $child) {
-                $this->numTraits += $child->numberOfTraits();
+                $this->numTraits += $child->getNumTraits();
             }
         }
 
         return $this->numTraits;
     }
 
-    public function numberOfTestedTraits(): int
+    /**
+     * Returns the number of tested traits.
+     *
+     * @return int
+     */
+    public function getNumTestedTraits()
     {
-        if ($this->numTestedTraits === -1) {
+        if ($this->numTestedTraits == -1) {
             $this->numTestedTraits = 0;
 
             foreach ($this->children as $child) {
-                $this->numTestedTraits += $child->numberOfTestedTraits();
+                $this->numTestedTraits += $child->getNumTestedTraits();
             }
         }
 
         return $this->numTestedTraits;
     }
 
-    public function numberOfMethods(): int
+    /**
+     * Returns the number of methods.
+     *
+     * @return int
+     */
+    public function getNumMethods()
     {
-        if ($this->numMethods === -1) {
+        if ($this->numMethods == -1) {
             $this->numMethods = 0;
 
             foreach ($this->children as $child) {
-                $this->numMethods += $child->numberOfMethods();
+                $this->numMethods += $child->getNumMethods();
             }
         }
 
         return $this->numMethods;
     }
 
-    public function numberOfTestedMethods(): int
+    /**
+     * Returns the number of tested methods.
+     *
+     * @return int
+     */
+    public function getNumTestedMethods()
     {
-        if ($this->numTestedMethods === -1) {
+        if ($this->numTestedMethods == -1) {
             $this->numTestedMethods = 0;
 
             foreach ($this->children as $child) {
-                $this->numTestedMethods += $child->numberOfTestedMethods();
+                $this->numTestedMethods += $child->getNumTestedMethods();
             }
         }
 
         return $this->numTestedMethods;
     }
 
-    public function numberOfFunctions(): int
+    /**
+     * Returns the number of functions.
+     *
+     * @return int
+     */
+    public function getNumFunctions()
     {
-        if ($this->numFunctions === -1) {
+        if ($this->numFunctions == -1) {
             $this->numFunctions = 0;
 
             foreach ($this->children as $child) {
-                $this->numFunctions += $child->numberOfFunctions();
+                $this->numFunctions += $child->getNumFunctions();
             }
         }
 
         return $this->numFunctions;
     }
 
-    public function numberOfTestedFunctions(): int
+    /**
+     * Returns the number of tested functions.
+     *
+     * @return int
+     */
+    public function getNumTestedFunctions()
     {
-        if ($this->numTestedFunctions === -1) {
+        if ($this->numTestedFunctions == -1) {
             $this->numTestedFunctions = 0;
 
             foreach ($this->children as $child) {
-                $this->numTestedFunctions += $child->numberOfTestedFunctions();
+                $this->numTestedFunctions += $child->getNumTestedFunctions();
             }
         }
 

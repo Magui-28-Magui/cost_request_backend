@@ -22,6 +22,22 @@ class User extends CI_Model {
 
     const TABLE = 'users';
 
+
+    public function getByEmail($email)
+    {
+        $this->db->select('*');
+        $this->db->from(self::TABLE);
+        $this->db->where(['email'=>$email]);
+        $query = $this->db->get();
+
+        if ($query->result() != NULL)
+        if( count ($query->result() > 0 ) )   
+         return $query->result()[0];
+        
+
+        return false;
+    }
+
     public function register()
     {
         /*  $this->title    = $_POST['title']; // please read the below note
@@ -29,7 +45,9 @@ class User extends CI_Model {
                 $this->date     = time();
 
                 $this->db->insert('entries', $this); */
-        $now = time();
+
+        $this->load->helper('date');
+        $now = date('Y-m-d H:i:s', now());
         $this->created_at  = $now;
         $this->updated_at  = $now;
         $this->db->insert(self::TABLE, $this);

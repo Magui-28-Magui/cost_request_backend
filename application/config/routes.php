@@ -55,4 +55,8 @@ $route['translate_uri_dashes'] = FALSE;
 
 
 $route['users/register']['post'] = 'users_controller/insert';
+$route['login']['post'] = 'users_controller/login';
+
+
+$route['test']['get'] = 'test_controller/index';
 

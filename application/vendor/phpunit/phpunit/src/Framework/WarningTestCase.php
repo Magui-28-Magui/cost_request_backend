@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,13 +7,17 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace PHPUnit\Framework;
 
 /**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
+ * A warning.
  */
-final class WarningTestCase extends TestCase
+class PHPUnit_Framework_WarningTestCase extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @var string
+     */
+    protected $message = '';
+
     /**
      * @var bool
      */
@@ -30,37 +34,42 @@ final class WarningTestCase extends TestCase
     protected $runTestInSeparateProcess = false;
 
     /**
-     * @var string
+     * @var bool
      */
-    private $message;
+    protected $useErrorHandler = false;
 
-    public function __construct(string $message = '')
+    /**
+     * @param string $message
+     */
+    public function __construct($message = '')
     {
         $this->message = $message;
-
         parent::__construct('Warning');
     }
 
-    public function getMessage(): string
+    /**
+     * @throws PHPUnit_Framework_Exception
+     */
+    protected function runTest()
+    {
+        throw new PHPUnit_Framework_Warning($this->message);
+    }
+
+    /**
+     * @return string
+     */
+    public function getMessage()
     {
         return $this->message;
     }
 
     /**
      * Returns a string representation of the test case.
+     *
+     * @return string
      */
-    public function toString(): string
+    public function toString()
     {
         return 'Warning';
-    }
-
-    /**
-     * @throws Exception
-     *
-     * @psalm-return never-return
-     */
-    protected function runTest(): void
-    {
-        throw new Warning($this->message);
     }
 }

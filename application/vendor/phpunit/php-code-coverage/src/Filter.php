@@ -1,122 +1,173 @@
-<?php declare(strict_types=1);
+<?php
 /*
- * This file is part of phpunit/php-code-coverage.
+ * This file is part of the php-code-coverage package.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace SebastianBergmann\CodeCoverage;
 
-use function array_keys;
-use function is_file;
-use function realpath;
-use function strpos;
-use SebastianBergmann\FileIterator\Facade as FileIteratorFacade;
-
-final class Filter
+/**
+ * Filter for whitelisting of code coverage information.
+ */
+class Filter
 {
     /**
-     * @psalm-var array<string,true>
+     * Source files that are whitelisted.
+     *
+     * @var array
      */
-    private $files = [];
+    private $whitelistedFiles = [];
 
     /**
-     * @psalm-var array<string,bool>
+     * Adds a directory to the whitelist (recursively).
+     *
+     * @param string $directory
+     * @param string $suffix
+     * @param string $prefix
      */
-    private $isFileCache = [];
-
-    public function includeDirectory(string $directory, string $suffix = '.php', string $prefix = ''): void
+    public function addDirectoryToWhitelist($directory, $suffix = '.php', $prefix = '')
     {
-        foreach ((new FileIteratorFacade)->getFilesAsArray($directory, $suffix, $prefix) as $file) {
-            $this->includeFile($file);
+        $facade = new \File_Iterator_Facade;
+        $files  = $facade->getFilesAsArray($directory, $suffix, $prefix);
+
+        foreach ($files as $file) {
+            $this->addFileToWhitelist($file);
         }
     }
 
     /**
-     * @psalm-param list<string> $files
+     * Adds a file to the whitelist.
+     *
+     * @param string $filename
      */
-    public function includeFiles(array $filenames): void
+    public function addFileToWhitelist($filename)
     {
-        foreach ($filenames as $filename) {
-            $this->includeFile($filename);
+        $this->whitelistedFiles[realpath($filename)] = true;
+    }
+
+    /**
+     * Adds files to the whitelist.
+     *
+     * @param array $files
+     */
+    public function addFilesToWhitelist(array $files)
+    {
+        foreach ($files as $file) {
+            $this->addFileToWhitelist($file);
         }
     }
 
-    public function includeFile(string $filename): void
+    /**
+     * Removes a directory from the whitelist (recursively).
+     *
+     * @param string $directory
+     * @param string $suffix
+     * @param string $prefix
+     */
+    public function removeDirectoryFromWhitelist($directory, $suffix = '.php', $prefix = '')
+    {
+        $facade = new \File_Iterator_Facade;
+        $files  = $facade->getFilesAsArray($directory, $suffix, $prefix);
+
+        foreach ($files as $file) {
+            $this->removeFileFromWhitelist($file);
+        }
+    }
+
+    /**
+     * Removes a file from the whitelist.
+     *
+     * @param string $filename
+     */
+    public function removeFileFromWhitelist($filename)
     {
         $filename = realpath($filename);
 
-        if (!$filename) {
-            return;
-        }
-
-        $this->files[$filename] = true;
+        unset($this->whitelistedFiles[$filename]);
     }
 
-    public function excludeDirectory(string $directory, string $suffix = '.php', string $prefix = ''): void
+    /**
+     * Checks whether a filename is a real filename.
+     *
+     * @param string $filename
+     *
+     * @return bool
+     */
+    public function isFile($filename)
     {
-        foreach ((new FileIteratorFacade)->getFilesAsArray($directory, $suffix, $prefix) as $file) {
-            $this->excludeFile($file);
-        }
-    }
-
-    public function excludeFile(string $filename): void
-    {
-        $filename = realpath($filename);
-
-        if (!$filename || !isset($this->files[$filename])) {
-            return;
-        }
-
-        unset($this->files[$filename]);
-    }
-
-    public function isFile(string $filename): bool
-    {
-        if (isset($this->isFileCache[$filename])) {
-            return $this->isFileCache[$filename];
-        }
-
-        if ($filename === '-' ||
+        if ($filename == '-' ||
             strpos($filename, 'vfs://') === 0 ||
             strpos($filename, 'xdebug://debug-eval') !== false ||
             strpos($filename, 'eval()\'d code') !== false ||
             strpos($filename, 'runtime-created function') !== false ||
             strpos($filename, 'runkit created function') !== false ||
             strpos($filename, 'assert code') !== false ||
-            strpos($filename, 'regexp code') !== false ||
-            strpos($filename, 'Standard input code') !== false) {
-            $isFile = false;
-        } else {
-            $isFile = is_file($filename);
+            strpos($filename, 'regexp code') !== false) {
+            return false;
         }
 
-        $this->isFileCache[$filename] = $isFile;
-
-        return $isFile;
+        return file_exists($filename);
     }
 
-    public function isExcluded(string $filename): bool
+    /**
+     * Checks whether or not a file is filtered.
+     *
+     * @param string $filename
+     *
+     * @return bool
+     */
+    public function isFiltered($filename)
     {
         if (!$this->isFile($filename)) {
             return true;
         }
 
-        return !isset($this->files[$filename]);
+        $filename = realpath($filename);
+
+        return !isset($this->whitelistedFiles[$filename]);
     }
 
     /**
-     * @psalm-return list<string>
+     * Returns the list of whitelisted files.
+     *
+     * @return array
      */
-    public function files(): array
+    public function getWhitelist()
     {
-        return array_keys($this->files);
+        return array_keys($this->whitelistedFiles);
     }
 
-    public function isEmpty(): bool
+    /**
+     * Returns whether this filter has a whitelist.
+     *
+     * @return bool
+     */
+    public function hasWhitelist()
     {
-        return empty($this->files);
+        return !empty($this->whitelistedFiles);
+    }
+
+    /**
+     * Returns the whitelisted files.
+     *
+     * @return array
+     */
+    public function getWhitelistedFiles()
+    {
+        return $this->whitelistedFiles;
+    }
+
+    /**
+     * Sets the whitelisted files.
+     *
+     * @param array $whitelistedFiles
+     */
+    public function setWhitelistedFiles($whitelistedFiles)
+    {
+        $this->whitelistedFiles = $whitelistedFiles;
     }
 }

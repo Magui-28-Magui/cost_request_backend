@@ -1,62 +1,52 @@
-<?php declare(strict_types=1);
+<?php
 /*
- * This file is part of phpunit/php-code-coverage.
+ * This file is part of the php-code-coverage package.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace SebastianBergmann\CodeCoverage\Report\Xml;
 
-use DOMDocument;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Project extends Node
+class Project extends Node
 {
-    public function __construct(string $directory)
+    public function __construct($name)
     {
         $this->init();
-        $this->setProjectSourceDirectory($directory);
+        $this->setProjectName($name);
     }
 
-    public function projectSourceDirectory(): string
+    private function init()
     {
-        return $this->contextNode()->getAttribute('source');
+        $dom = new \DOMDocument;
+        $dom->loadXML('<?xml version="1.0" ?><phpunit xmlns="http://schema.phpunit.de/coverage/1.0"><project/></phpunit>');
+
+        $this->setContextNode(
+            $dom->getElementsByTagNameNS(
+                'http://schema.phpunit.de/coverage/1.0',
+                'project'
+            )->item(0)
+        );
     }
 
-    public function buildInformation(): BuildInformation
+    private function setProjectName($name)
     {
-        $buildNode = $this->dom()->getElementsByTagNameNS(
-            'https://schema.phpunit.de/coverage/1.0',
-            'build'
-        )->item(0);
-
-        if (!$buildNode) {
-            $buildNode = $this->dom()->documentElement->appendChild(
-                $this->dom()->createElementNS(
-                    'https://schema.phpunit.de/coverage/1.0',
-                    'build'
-                )
-            );
-        }
-
-        return new BuildInformation($buildNode);
+        $this->getContextNode()->setAttribute('name', $name);
     }
 
-    public function tests(): Tests
+    public function getTests()
     {
-        $testsNode = $this->contextNode()->getElementsByTagNameNS(
-            'https://schema.phpunit.de/coverage/1.0',
+        $testsNode = $this->getContextNode()->getElementsByTagNameNS(
+            'http://schema.phpunit.de/coverage/1.0',
             'tests'
         )->item(0);
 
         if (!$testsNode) {
-            $testsNode = $this->contextNode()->appendChild(
-                $this->dom()->createElementNS(
-                    'https://schema.phpunit.de/coverage/1.0',
+            $testsNode = $this->getContextNode()->appendChild(
+                $this->getDom()->createElementNS(
+                    'http://schema.phpunit.de/coverage/1.0',
                     'tests'
                 )
             );
@@ -65,26 +55,8 @@ final class Project extends Node
         return new Tests($testsNode);
     }
 
-    public function asDom(): DOMDocument
+    public function asDom()
     {
-        return $this->dom();
-    }
-
-    private function init(): void
-    {
-        $dom = new DOMDocument;
-        $dom->loadXML('<?xml version="1.0" ?><phpunit xmlns="https://schema.phpunit.de/coverage/1.0"><build/><project/></phpunit>');
-
-        $this->setContextNode(
-            $dom->getElementsByTagNameNS(
-                'https://schema.phpunit.de/coverage/1.0',
-                'project'
-            )->item(0)
-        );
-    }
-
-    private function setProjectSourceDirectory(string $name): void
-    {
-        $this->contextNode()->setAttribute('source', $name);
+        return $this->getDom();
     }
 }

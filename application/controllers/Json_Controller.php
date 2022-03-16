@@ -8,6 +8,8 @@ class Json_Controller extends CI_Controller {
             
     }
 
+    public $verify_authentication = TRUE;
+    public $auth; //Array for data of authentication
 
     public function ResponseOk($data)
     {
