@@ -13,7 +13,7 @@ class AuthenticationHook  {
      * This function used to block the every request except allowed ip address
      */
 
-    const SECRET_KEY = 'valores_martech_2022';
+    //const SECRET_KEY = 'valores_martech_2022';
 
     function requestAuth(){
         
@@ -31,7 +31,7 @@ class AuthenticationHook  {
             {
                 try {
 
-                    $decoded = JWT::decode($token, new Key(self::SECRET_KEY, 'HS256'));
+                    $decoded = JWT::decode($token, new Key(MARTECH_KEY, 'HS256'));
                     $controller = $decoded;
                     // Access is granted. Add code of the operation here          
                 }catch (Exception $e){

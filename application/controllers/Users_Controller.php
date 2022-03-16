@@ -75,7 +75,7 @@ class Users_Controller extends Json_Controller {
         }
 
 
-        const SECRET_KEY = 'valores_martech_2022';
+        //const SECRET_KEY = 'valores_martech_2022';
 
         public function login()
         {
@@ -98,7 +98,7 @@ class Users_Controller extends Json_Controller {
                                  if(password_verify($this->input->post('password'), $user->password_hash ))
                                  {
                                         //Parte donde se realiza el token
-                                        $secret_key = self::SECRET_KEY;
+                                        $secret_key = MARTECH_KEY;
                                         $issuer_claim = "martechmedicals.com"; // this can be the servername
                                         $audience_claim = "cost_request_backend";
                                         $issuedat_claim = time(); // issued at
